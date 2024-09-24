@@ -1,0 +1,105 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+
+class BMPDrawer {
+private:
+    BITMAPFILEHEADER fileHeader;
+    BITMAPINFOHEADER infoHeader;
+    std::vector<unsigned char> imageData;
+    int width;
+    int height;
+    bool isOpen;
+
+public:
+    BMPDrawer() : isOpen(false) {}
+
+    ~BMPDrawer() {
+        closeBMP();
+    }
+
+    bool openBMP(const std::string& fileName) {
+        std::ifstream file(fileName, std::ios::binary);
+        if (!file.is_open()) {
+            return false;
+        }
+
+        file.read(reinterpret_cast<char*>(&fileHeader), sizeof(fileHeader));
+        file.read(reinterpret_cast<char*>(&infoHeader), sizeof(infoHeader));
+
+        if (infoHeader.biBitCount != 24 && infoHeader.biBitCount != 32) {
+            file.close();
+            return false;
+        }
+
+        width = infoHeader.biWidth;
+        height = abs(infoHeader.biHeight);
+        int paddingSize = (4 - (width * (infoHeader.biBitCount / 8)) % 4) % 4;
+        int imageSize = width * height * (infoHeader.biBitCount / 8);
+        imageData.resize(imageSize);
+
+        unsigned char* pImageData = imageData.data();
+        for (int y = 0; y < height; ++y) {
+            file.read(reinterpret_cast<char*>(pImageData), width * (infoHeader.biBitCount / 8));
+            file.ignore(paddingSize);
+            pImageData += width * (infoHeader.biBitCount / 8);
+        }
+
+        file.close();
+        isOpen = true;
+        return true;
+    }
+
+    void displayBMP() {
+        if (!isOpen || imageData.empty()) {
+            std::cout << "Image not open or is empty." << std::endl;
+            return;
+        }
+
+        for (int y = height - 1; y >= 0; --y) { // Перевернуть вывод
+            for (int x = 0; x < width; ++x) {
+                unsigned char blue = imageData[y * width * (infoHeader.biBitCount / 8) + x * (infoHeader.biBitCount / 8)];
+                unsigned char green = imageData[y * width * (infoHeader.biBitCount / 8) + x * (infoHeader.biBitCount / 8) + 1];
+                unsigned char red = imageData[y * width * (infoHeader.biBitCount / 8) + x * (infoHeader.biBitCount / 8) + 2];
+
+                if (red == 255 && green == 255 && blue == 255) {
+                    std::cout << " "; 
+                }
+                else if (red == 0 && green == 0 && blue == 0) {
+                    std::cout << "*"; // Черный цвет
+                }
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    void closeBMP() {
+        if (isOpen) {
+            imageData.clear();
+            isOpen = false;
+        }
+    }
+};
+
+int main(int argc, char* argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: drawBmp.exe <path_to_bmp_file>" << std::endl;
+        return 1;
+    }
+
+    std::string filePath = argv[1];
+    BMPDrawer drawer;
+
+    if (drawer.openBMP(filePath)) {
+        drawer.displayBMP();
+        drawer.closeBMP();
+    }
+    else {
+        std::cerr << "Could not open BMP file." << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
