@@ -1,0 +1,77 @@
+
+#include <iostream>
+#include <string>
+#include <thread>
+#include <chrono>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <unistd.h>
+
+class Client {
+private:
+    std::string name;
+    int port;
+    int period;
+    int sock;
+
+    void connect_and_send() {
+        while (true) {
+            sock = socket(AF_INET, SOCK_STREAM, 0);
+            if (sock < 0) {
+                std::cerr << "Error creating socket" << std::endl;
+                return;
+            }
+
+            struct sockaddr_in addr;
+            addr.sin_family = AF_INET;
+            addr.sin_port = htons(port);
+            addr.sin_addr.s_addr = INADDR_ANY;
+
+            if (connect(sock, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+                std::cerr << "Error connecting to server" << std::endl;
+                close(sock);
+                std::this_thread::sleep_for(std::chrono::seconds(period));
+                continue;
+            }
+
+            std::string message = get_current_time() + " " + name;
+            send(sock, message.c_str(), message.size(), 0);
+            close(sock);
+            std::this_thread::sleep_for(std::chrono::seconds(period));
+        }
+    }
+
+    std::string get_current_time() {
+        auto now = std::chrono::system_clock::now();
+        auto in_time_t = std::chrono::system_clock::to_time_t(now);
+
+        std::stringstream ss;
+        ss << std::put_time(std::localtime(&in_time_t), "%Y-%m-%d %H:%M:%S.%f");
+        return ss.str();
+    }
+
+public:
+    Client(std::string name, int port, int period) : name(name), port(port), period(period) {
+        std::thread t(&Client::connect_and_send, this);
+        t.detach();
+    }
+};
+
+int main(int argc, char *argv[]) {
+    if (argc != 4) {
+        std::cerr << "Usage: " << argv[0] << " <name> <port> <period>" << std::endl;
+        return 1;
+    }
+
+    std::string name = argv[1];
+    int port = std::stoi(argv[2]);
+    int period = std::stoi(argv[3]);
+
+    Client client(name, port, period);
+
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::hours(1));
+    }
+
+    return 0;
+}
