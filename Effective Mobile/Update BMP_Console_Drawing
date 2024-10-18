@@ -52,7 +52,7 @@ public:
         return true;
     }
 
-    void displayBMP() {
+    void displayBMP() const {
         if (!isOpen || imageData.empty()) {
             std::cout << "Image not open or is empty." << std::endl;
             return;
