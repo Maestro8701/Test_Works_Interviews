@@ -1,1 +1,32 @@
 
+разработать приложение, которое имеет функционал по работе с
+криптовалютой Bitcoin (BTC), а именно — создание и конвертация приватных
+ключей.
+Функционал:
+На вход подается произвольная строка. Строка прогоняется через sha256()
+функцию. На выходе должны получить:
+- Приватный ключ в HEX и WIF (compressed и uncompressed) форматах.
+- Получение адресов: P2PKH(compressed), P2PKH(uncompressed),
+P2SH(compressed), BECH32(compressed)
+- Графический интерфейс, приложение должно работать на OS Windows
+Требования:
+- С++. Допускается использование любых библиотек.
+Контрольные тесты:
+Ввод: bitcoin is awesome
+Вывод:
+HEX: 23d4a09295be678b21a5f1dceae1f634a69c1b41775f680ebf8165266471401b
+WIF(c): KxRMt7KypfEsLNSikhxTPYepDMBizHNmH5Bii3wssgesxrkHNJg6
+WIF(u): 5J64pq77XjeacCezwmAr2V1s7snvvJkuAz8sENxw7xCkikceV6e
+P2PKH(c): 1JRW4d8vHZseMEtYbgJ7MwPG1TasHUUVNq
+P2SH(c): 3LtPxQEqqo1sYGF7VTEufzBUki6pFiDVa1
+BECH32(c): bc1qhuwxrtqe2akhr4rz8vv97waw9g75ma4unk5vnf
+P2PKH(u): 14NWDXkQwcGN1Pd9fboL8npVynD5SfyJAE
+Что должно получиться в результате:
+1) После завершения, на видео длительностью не более минуты нужно записать
+как все работает.
+2) Предоставить данные, что выдает программа для следующих (3) строк на ввод:
+14nuZCWe76kWigUKAjFxyJLFHQyLTsKXYk
+emergency
+fly by night
+3) Предоставить краткое описание алгоритмов, как приватный ключ
+конвертировался в различные виды адресов.
