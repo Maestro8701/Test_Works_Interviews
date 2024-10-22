@@ -43,7 +43,8 @@ void BitcoinApp::generateKeys() {
         return;
     }
 
-    // Хеширование строки с помощью SHA-256 unsigned char hash[SHA256_DIGEST_LENGTH];
+    // Хеширование строки с помощью SHA-256
+    unsigned char hash[SHA256_DIGEST_LENGTH];
     SHA256((unsigned char*)input.toStdString().c_str(), input.length(), hash);
 
     // Преобразование хеша в HEX
