@@ -1,0 +1,52 @@
+#include <iostream>
+#include <string>
+#include <bitcoin/bitcoin.hpp>
+#include <openssl/sha.h>
+
+std::string sha256(const std::string& input) {
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256(reinterpret_cast<const unsigned char*>(input.c_str()), input.size(), hash);
+    return bc::encode_base16(hash);
+}
+
+std::string privateKeyToWIF(const std::string& hexKey, bool compressed) {
+    bc::data_chunk secret = bc::from_hex(hexKey);
+    bc::secret sec = bc::secret(secret);
+    return bc::encode_base58(sec.to_wif(compressed));
+}
+
+std::string generateAddress(const std::string& hexKey, bool compressed, bool isP2PKH) {
+    bc::data_chunk secret = bc::from_hex(hexKey);
+    bc::secret sec = bc::secret(secret);
+    bc::payment_address addr = isP2PKH ? bc::payment_address(bc::wallet::payment_address::p2pkh, sec.to_public_key(compressed)) : bc::payment_address(bc::wallet::payment_address::p2sh, sec.to_public_key(compressed));
+    return addr.encoded();
+}
+
+int main() {
+    std::string input;
+    std::cout << "Введите строку: ";
+    std::getline(std::cin, input);
+
+    // Генерация хеша 
+    std::string hexKey = sha256(input);
+    std::cout << "HEX: " << hexKey << std::endl;
+
+    // Генерация WIF 
+    std::string wifCompressed = privateKeyToWIF(hexKey, true);
+    std::string wifUncompressed = privateKeyToWIF(hexKey, false);
+    std::cout << "WIF(c): " << wifCompressed << std::endl;
+    std::cout << "WIF(u): " << wifUncompressed << std::endl;
+
+    // Генерация адресов 
+    std::string p2pkhCompressed = generateAddress(hexKey, true, true);
+    std::string p2pkhUncompressed = generateAddress(hexKey, false, true);
+    std::string p2shCompressed = generateAddress(hexKey, true, false);
+    std::string bech32Compressed = bc::address(bc::script(hexKey), bc::address_type::bech32).encoded();
+
+    std::cout << "P2PKH(c): " << p2pkhCompressed << std::endl;
+    std::cout << "P2PKH(u): " << p2pkhUncompressed << std::endl;
+    std::cout << "P2SH(c): " << p2shCompressed << std::endl;
+    std::cout << "BECH32(c): " << bech32Compressed << std::endl;
+
+    return 0;
+}
