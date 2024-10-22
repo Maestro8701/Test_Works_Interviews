@@ -1,1 +1,73 @@
 
+#include <QApplication>
+#include <QWidget>
+#include <QVBoxLayout>
+#include <QLineEdit>
+#include <QPushButton>
+#include <QTextEdit>
+#include <QMessageBox>
+#include <openssl/sha.h>
+#include <bitcoin/bitcoin.hpp> 
+
+class BitcoinApp : public QWidget {
+public:
+    BitcoinApp(QWidget *parent = nullptr);
+
+private slots:
+    void generateKeys();
+
+private:
+    QLineEdit *inputField;
+    QTextEdit *outputField;
+};
+
+BitcoinApp::BitcoinApp(QWidget *parent) : QWidget(parent) {
+    QVBoxLayout *layout = new QVBoxLayout(this);
+    inputField = new QLineEdit(this);
+    inputField->setPlaceholderText("Введите строку");
+    QPushButton *generateButton = new QPushButton("Сгенерировать ключи", this);
+    outputField = new QTextEdit(this);
+    outputField->setReadOnly(true);
+
+    layout->addWidget(inputField);
+    layout->addWidget(generateButton);
+    layout->addWidget(outputField);
+
+    connect(generateButton, &QPushButton::clicked, this, &BitcoinApp::generateKeys);
+}
+
+void BitcoinApp::generateKeys() {
+    QString input = inputField->text();
+    if (input.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Введите строку для генерации ключей");
+        return;
+    }
+
+    // Хеширование строки с помощью SHA-256 unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256((unsigned char*)input.toStdString().c_str(), input.length(), hash);
+
+    // Преобразование хеша в HEX
+    std::string hexKey = bc::encode_base16(hash);
+    
+    // Генерация приватного ключа и адресов (используйте библиотеку Bitcoin)
+    // Примерные функции, вам нужно будет реализовать их std::string wifCompressed = bc::encode_base58(bc::to_wif(hash, true)); // Сжато std::string wifUncompressed = bc::encode_base58(bc::to_wif(hash, false)); // Не сжато std::string p2pkhCompressed = bc::address(bc::secret(hash, true)).encoded(); // P2PKH сжатый std::string p2pkhUncompressed = bc::address(bc::secret(hash, false)).encoded(); // P2PKH не сжатый std::string p2shCompressed = bc::address(bc::script(hash)).encoded(); // P2SH сжатый std::string bech32Compressed = bc::address(bc::script(hash), bc::address_type::bech32).encoded(); // BECH32 сжатый
+
+    // Формирование вывода
+    outputField->clear();
+    outputField->append("HEX: " + QString::fromStdString(hexKey));
+    outputField->append("WIF(c): " + QString::fromStdString(wifCompressed));
+    outputField->append("WIF(u): " + QString::fromStdString(wifUncompressed));
+    outputField->append("P2PKH(c): " + QString::fromStdString(p2pkhCompressed));
+    outputField->append("P2PKH(u): " + QString::fromStdString(p2pkhUncompressed));
+    outputField->append("P2SH(c): " + QString::fromStdString(p2shCompressed));
+    outputField->append("BECH32(c): " + QString::fromStdString(bech32Compressed));
+}
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+    BitcoinApp window;
+    window.setWindowTitle("Bitcoin Key Generator");
+    window.resize(400, 300);
+    window.show();
+    return app.exec();
+}
