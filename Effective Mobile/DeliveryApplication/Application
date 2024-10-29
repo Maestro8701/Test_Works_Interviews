@@ -1,42 +1,135 @@
+using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-#include <QApplication>
-#include <QWidget>
-#include <QPushButton>
-#include <QLineEdit>
-#include <QVBoxLayout>
-#include <QLabel>
+public class Order
+{
+    public string OrderId { get; set; }
+    public double Weight { get; set; }
+    public string District { get; set; }
+    public DateTime DeliveryTime { get; set; }
 
-int main(int argc, char* argv[]) {
-    // Создаем приложение
-    QApplication app(argc, argv);
-
-    // Создаем основное окно
-    QWidget window;
-    window.setWindowTitle("Пример программы на Qt");
-
-    // Создаем элементы интерфейса
-    QVBoxLayout* layout = new QVBoxLayout(&window);
-    QLabel* label = new QLabel("Введите текст и нажмите кнопку:");
-    QLineEdit* lineEdit = new QLineEdit();
-    QPushButton* button = new QPushButton("Нажми меня!");
-    QLabel* outputLabel = new QLabel();
-
-    // Добавляем элементы в layout
-    layout->addWidget(label);
-    layout->addWidget(lineEdit);
-    layout->addWidget(button);
-    layout->addWidget(outputLabel);
-
-    // Соединяем сигнал кнопки с слотом
-    QObject::connect(button, &QPushButton::clicked, [&]() {
-        outputLabel->setText("Вы ввели: " + lineEdit->text());
-        });
-
-    // Устанавливаем layout для основного окна
-    window.setLayout(layout);
-    window.resize(400, 200);
-    window.show();
-
-    // Запускаем приложение
-    return app.exec();
+    public static Order Parse(string line)
+    {
+        var parts = line.Split(',');
+        return new Order
+        {
+            OrderId = parts[0],
+            Weight = double.Parse(parts[1], System.Globalization.CultureInfo.InvariantCulture),
+            District = parts[2],
+            DeliveryTime = DateTime.Parse(parts[3])
+        };
+    }
 }
+
+
+public class Logger
+{
+    private readonly string _LogFilePath;
+
+    public Logger(string logFilePath)
+    {
+        _LogFilePath = logFilePath;
+    }
+
+    public void Log(string message)
+    {
+        File.AppendAllText(_LogFilePath, $"{DateTime.Now}: {message}\n");
+    }
+}
+
+
+public class OrderFilter
+{
+    public static List<Order> FilterOrders(List<Order> orders, string district, DateTime firstDeliveryTime)
+    {
+        var endTime = firstDeliveryTime.AddMinutes(30);
+        return orders.Where(o => o.District.Equals(district, StringComparison.OrdinalIgnoreCase) &&
+                                  o.DeliveryTime >= firstDeliveryTime &&
+                                  o.DeliveryTime <= endTime).ToList();
+    }
+}
+
+
+public class OrderRepository
+{
+    public static List<Order> LoadOrders(string filePath)
+    {
+        var orders = new List<Order>();
+        foreach (var line in File.ReadLines(filePath))
+        {
+            try
+            {
+                var order = Order.Parse(line);
+                orders.Add(order);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Ошибка анализа строки: {line}. Ошибка:{ex.Message}");
+            }
+        }
+        return orders;
+    }
+
+    public static void SaveFilteredOrders(List<Order> filteredOrders, string outputPath)
+    {
+        using (var writer = new StreamWriter(outputPath))
+        {
+            foreach (var order in filteredOrders)
+            {
+                writer.WriteLine($"{order.OrderId},{order.Weight},{order.District},{order.DeliveryTime}");
+            }
+        }
+    }
+}
+
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        if (args.Length < 5)
+        {
+            Console.WriteLine("Введите данные в правильном формате");
+            Console.WriteLine("Пример: Test_Work.exe orders.txt Downtown \"2023-10-01 12:00:00\" log.txt result.txt");
+            return;
+        }
+
+        string ordersFilePath = args[0];
+        string district = args[1];
+        DateTime firstDeliveryTime;
+
+        if (!DateTime.TryParse(args[2], out firstDeliveryTime))
+        {
+            Console.WriteLine("Неверный формат даты для времени первой доставки");
+            return;
+        }
+
+        string logFilePath = args[3];
+        string outputFilePath = args[4];
+
+        var logger = new Logger(logFilePath);
+        logger.Log("Запуск приложения...");
+
+        try
+        {
+            var orders = OrderRepository.LoadOrders(ordersFilePath);
+            logger.Log($"Загружено {orders.Count} заказов из {ordersFilePath}.");
+
+            var filteredOrders = OrderFilter.FilterOrders(orders, district, firstDeliveryTime);
+            logger.Log($"Количество отфильтрованных заказов: {filteredOrders.Count}.");
+
+            OrderRepository.SaveFilteredOrders(filteredOrders, outputFilePath);
+            logger.Log($"Сохранены отфильтрованные заказы в {outputFilePath}.");
+        }
+        catch (Exception ex)
+        {
+            logger.Log($"Ошибка: {ex.Message}");
+        }
+
+        logger.Log("Приложение завершено.");
+    }
+}
+
+
