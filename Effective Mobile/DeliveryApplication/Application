@@ -1,1 +1,42 @@
 
+#include <QApplication>
+#include <QWidget>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QVBoxLayout>
+#include <QLabel>
+
+int main(int argc, char* argv[]) {
+    // Создаем приложение
+    QApplication app(argc, argv);
+
+    // Создаем основное окно
+    QWidget window;
+    window.setWindowTitle("Пример программы на Qt");
+
+    // Создаем элементы интерфейса
+    QVBoxLayout* layout = new QVBoxLayout(&window);
+    QLabel* label = new QLabel("Введите текст и нажмите кнопку:");
+    QLineEdit* lineEdit = new QLineEdit();
+    QPushButton* button = new QPushButton("Нажми меня!");
+    QLabel* outputLabel = new QLabel();
+
+    // Добавляем элементы в layout
+    layout->addWidget(label);
+    layout->addWidget(lineEdit);
+    layout->addWidget(button);
+    layout->addWidget(outputLabel);
+
+    // Соединяем сигнал кнопки с слотом
+    QObject::connect(button, &QPushButton::clicked, [&]() {
+        outputLabel->setText("Вы ввели: " + lineEdit->text());
+        });
+
+    // Устанавливаем layout для основного окна
+    window.setLayout(layout);
+    window.resize(400, 200);
+    window.show();
+
+    // Запускаем приложение
+    return app.exec();
+}
