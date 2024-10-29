@@ -1,0 +1,135 @@
+//Макет тестов не интегрированны в код, не проверенны
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Diagnostics;
+
+public class Tests
+{
+    public static void RunTests()
+    {
+        TestParse();
+        TestFilterOrders();
+        TestLoadOrders();
+        TestSaveFilteredOrders();
+        RunExternalProgram();
+    }
+
+    private static void TestParse()
+    {
+        var line = "123,10.5,Downtown,2023-10-01 12:00:00";
+        var order = Order.Parse(line);
+        
+        if (order.OrderId != "123" || order.Weight != 10.5 || order.District != "Downtown" || order.DeliveryTime != new DateTime(2023, 10, 1, 12, 0, 0))
+        {
+            Console.WriteLine("TestParse failed");
+        }
+        else
+        {
+            Console.WriteLine("TestParse passed");
+        }
+    }
+
+    private static void TestFilterOrders()
+    {
+        var orders = new List<Order>
+        {
+            new Order { OrderId = "1", Weight = 10, District = "Downtown", DeliveryTime = new DateTime(2023, 10, 1, 12, 0, 0) },
+            new Order { OrderId = "2", Weight = 5, District = "Uptown", DeliveryTime = new DateTime(2023, 10, 1, 12, 15, 0) },
+            new Order { OrderId = "3", Weight = 8, District = "Downtown", DeliveryTime = new DateTime(2023, 10, 1, 12, 20, 0) }
+        };
+
+        var filteredOrders = OrderFilter.FilterOrders(orders, "Downtown", new DateTime(2023, 10, 1, 12, 0, 0));
+
+        if (filteredOrders.Count != 2)
+        {
+            Console.WriteLine("TestFilterOrders failed");
+        }
+        else
+        {
+            Console.WriteLine("TestFilterOrders passed");
+        }
+    }
+
+    private static void TestLoadOrders()
+    {
+        string testFilePath = "test_orders.txt";
+        File.WriteAllText(testFilePath, "1,10.0,Downtown,2023-10-01 12:00:00\n2,5.0,Uptown,2023-10-01 12:15:00");
+
+        var orders = OrderRepository.LoadOrders(testFilePath);
+
+        if (orders.Count != 2)
+        {
+            Console.WriteLine("TestLoadOrders failed");
+        }
+        else
+        {
+            Console.WriteLine("TestLoadOrders passed");
+        }
+
+        // Clean up
+        File.Delete(testFilePath);
+    }
+
+    private static void TestSaveFilteredOrders()
+    {
+        var filteredOrders = new List<Order>
+        {
+            new Order { OrderId = "1", Weight = 10, District = "Downtown", DeliveryTime = new DateTime(2023, 10, 1, 12, 0, 0) }
+        };
+
+        string outputPath = "filtered_orders.txt";
+        OrderRepository.SaveFilteredOrders(filteredOrders, outputPath);
+
+        var savedOrders = File.ReadAllLines(outputPath);
+
+        if (savedOrders.Length != 1 || savedOrders[0] != "1,10,Downtown,10/1/2023 12:00:00 PM")
+        {
+            Console.WriteLine("TestSaveFilteredOrders failed");
+        }
+        else
+        {
+            Console.WriteLine("TestSaveFilteredOrders passed");
+        }
+
+        // Clean up
+        File.Delete(outputPath);
+    }
+
+        private static void RunExternalProgram()
+    {
+        string programPath = @"C:\Path\To\Your\Program.exe"; // Укажите путь к вашей программе
+        ProcessStartInfo startInfo = new ProcessStartInfo
+        {
+            FileName = programPath,
+            Arguments = "", // Укажите аргументы, если нужно
+            UseShellExecute = false,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            CreateNoWindow = true
+        };
+
+        using (Process process = Process.Start(startInfo))
+        {
+            string output = process.StandardOutput.ReadToEnd();
+            string error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            Console.WriteLine("Output from external program:");
+            Console.WriteLine(output);
+            if (!string.IsNullOrEmpty(error))
+            {
+                Console.WriteLine("Error from external program:");
+                Console.WriteLine(error);
+            }
+        }
+    }
+}
+
+class Program
+{
+    static void Main(string[] args)
+    {
+        Tests.RunTests();
+    }
+}
