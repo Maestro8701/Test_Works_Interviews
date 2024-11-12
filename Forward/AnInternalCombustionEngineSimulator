@@ -1,0 +1,142 @@
+#include <iostream>
+#include <array>
+
+using namespace std;
+//Тут можно на полстраницы дать физическуб базу программисту для наследования кода. Чтобы человек который вообще слабо знаком с физикой и механикой понимал что такое к примеру момент инерции или крутящий момент 
+// примерно на полстраницы определения терминов которые не очевидны при прочтении, программист должен знать код и вся а остальное для упрощенного понимания можно добавить как условное readme чтобы можно было открыть код
+//и быстро все понять
+// Момент инерции - это мера инерции тела, которая определяет, насколько трудно изменить его вращение.Он зависит от массы тела и распределения этой массы относительно оси вращения.
+// Крутящий момент - это сила, которая вызывает вращение объекта вокруг оси. Он измеряется в Н∙м и зависит от силы и расстояния, на котором эта сила прикладывается к объекту.
+
+/*тут обьяснение моих решений
+1)Код отличный от типичной сферы работы программиста значит он должен быть высокодокумментируемым поэтому имена переменных полные их частично можно сократить но программист чтобы
+разобраться с этим кодом нужно будет вникать в суть всего происходящего а это проще всего сделать если код ВЫСОКОдокументируемый так программист не должен по умолчанию знаком с этой сферой быть
+поэтому с имен переменных удалены предлоги и прочие малонесущие информацию слова чтоб оставить ключевые слова и  в переменных сокращены некоторые часто используемые слова температура и коэфициент */
+
+//Сокращения в именах переменных часто используемые слова  T = temperature, C = coefficient, D = dependence
+
+//2)Вообще нужно использовать vector а не array но так как в данном  случае размер массива известен и не известно будет ли он изменяться я использовал самый быстрый массив, 
+// в идеале мы используем vector если писать условно универсальный код, вообще код на входные данные сделан если входные данные меняеются то некоторые момент нужно переделывать
+// чтобы сделать код универсальным а сделать код универсальным можно только когда понимааешь все варианты входных данных и варианты использования 
+
+// Структура для параметров двигателя
+struct EngineParameters {
+    double moment_inertia; // Момент инерции (кг∙м²)
+    array<double, 6> torque_dependence; // Крутящий момент (Н∙м)
+    array<double, 6> crankshaft_rotation_speed; // Скорость вращения (рад/сек)
+    double T_overheat; // Температура перегрева (°C)
+    double C_D_heating_speed_torque; // Коэффициент нагрева (°C/(Н∙м∙сек))
+    double C_D_heating_rate_speed_rotation_crankshaft; // Коэффициент нагрева от скорости (°C/(рад²∙сек))
+    double C_D_cooling_rate_T_engine_environment; // Коэффициент охлаждения (1/сек)
+    double T_ambient; // Температура окружающей среды (°C)
+};
+
+// Класс для тестов двигателя
+template<typename T>
+class EngineTests {
+public:
+    EngineTests(const T& params)
+        : params_(params), speed_(0), time_(0) {}
+
+    void SimulateHeating() {
+        time_ = 0; // Сброс времени перед тестом
+        speed_ = 0; // Сброс скорости перед тестом
+        double T_engine = params_.T_ambient; // Инициализация температуры двигателя
+
+        double heating_rate;
+        double cooling_rate;
+
+        while (T_engine < params_.T_overheat) {
+            torque_current_ = GetTorque(speed_);
+            heating_rate = torque_current_ * params_.C_D_heating_speed_torque + speed_ * speed_ * params_.C_D_heating_rate_speed_rotation_crankshaft;
+            cooling_rate = params_.C_D_cooling_rate_T_engine_environment * (params_.T_ambient - T_engine);
+            T_engine += heating_rate - cooling_rate;
+
+            acceleration_ = torque_current_ / params_.moment_inertia;
+            speed_ += acceleration_;
+
+            time_ += 1; // Имитировать временной шаг (в секундах)
+        }
+
+        cout << "Время до перегрева: " << time_ << " секунд" << endl;
+        speed_ = 0; // Сброс скорости после теста
+        time_ = 0; // Сброс времени после теста
+
+    }
+
+    void SimulateMaxPower() {
+        double max_power = 0;
+        double max_speed = 0;
+        double power;
+
+        speed_ = 0; // Сброс скорости перед тестом
+        time_ = 0;// Сброс времени перед тестом
+
+        while (true) {
+            torque_current_ = GetTorque(speed_);
+            if (torque_current_ <= 0) break; // Остановитесь, если крутящий момент равен нулю
+
+            power = (torque_current_ * speed_) / 1000; // Преобразовать в кВт
+            if (power > max_power) {
+                max_power = power;
+                max_speed = speed_;
+            }
+
+            acceleration_ = torque_current_ / params_.moment_inertia;
+            speed_ += acceleration_;
+
+            time_ += 1; // Имитировать временной шаг (в секундах)
+        }
+        cout << "Максимальная мощность: " << max_power << " кВт при скорости: " << max_speed << " рад/сек" << endl;
+        speed_ = 0; // Сброс скорости после теста
+        time_ = 0; // Сброс времени после теста
+
+    }
+
+private:
+    T params_; // Параметры двигателя
+    double speed_; // Скорость вращения коленвала
+    double time_; // Время работы двигателя
+    double torque_current_;
+    double acceleration_;
+
+    double GetTorque(double speed) const {
+        for (size_t i = 0; i < params_.crankshaft_rotation_speed.size(); ++i) {
+            if (speed < params_.crankshaft_rotation_speed[i]) {
+                return params_.torque_dependence[i - 1]; // Возвращаем предыдущий момент
+            }
+        }
+        return params_.torque_dependence.back(); // Возвращаем последний момент
+    }
+};
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    double T_ambient;
+    cout << "Введите температуру окружающей среды (°C) : "s;
+    cin >> T_ambient;
+    // Исходные данные
+    EngineParameters engine_params = {
+        10, // кг∙м²
+        {20, 75, 100, 105, 75, 0}, // Н∙м
+        {0, 75, 150, 200, 250, 300}, // рад/сек
+        110, // °C
+        0.01, // °C/(Н∙м∙сек)
+        0.0001, // °C/(рад²∙сек)
+        0.1, // 1/сек
+        T_ambient // Температура окружающей среды (°C)
+    };
+
+
+
+    // Создаем экземпляр тестов двигателя
+    EngineTests<EngineParameters> tests(engine_params);
+
+    // Тест на перегрев
+    tests.SimulateHeating();
+
+    // Тест на максимальную мощность
+    tests.SimulateMaxPower();
+
+    return 0;
+}
