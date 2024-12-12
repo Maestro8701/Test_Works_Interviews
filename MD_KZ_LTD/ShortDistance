@@ -1,0 +1,145 @@
+#include <algorithm>
+#include <cmath>
+#include <iostream>
+#include <limits>
+#include <queue>
+#include <vector>
+#include <unordered_map>
+
+using namespace std; 
+
+const double PI = 3.14159265358979323846;
+const double RADIUS = 100.0; 
+const double COST_PER_DISTANCE = 10.0; 
+
+struct Point {
+    double x, y;
+};
+
+double CalculateDistance(const Point& a, const Point& b) {
+    return sqrt(pow(a.x - b.x, 2) + pow(a.y - b.y, 2));
+}
+
+vector<Point> GenerateRandomPoints(int count) {
+    vector<Point> points;
+    for (int i = 0; i < count; ++i) {
+        double angle = ((double)rand() / RAND_MAX) * 2 * PI;
+        double radius = ((double)rand() / RAND_MAX) * RADIUS;
+        points.push_back({ radius * cos(angle), radius * sin(angle) });
+    }
+    return points;
+}
+
+unordered_map<int, vector<pair<int, double>>> BuildGraph(const vector<Point>& points) {
+    unordered_map<int, vector<pair<int, double>>> graph;
+    int n = points.size();
+
+    for (int i = 0; i < n; ++i) {
+        vector<pair<double, int>> distances;
+        for (int j = 0; j < n; ++j) {
+            if (i != j) {
+                distances.push_back({ CalculateDistance(points[i], points[j]), j });
+            }
+        }
+        sort(distances.begin(), distances.end());
+        int neighbors = min(6, max(2, (int)(distances.size() / 10))); 
+        for (int j = 0; j < neighbors; ++j) {
+            graph[i].push_back({ distances[j].second, distances[j].first * COST_PER_DISTANCE });
+        }
+    }
+    return graph;
+}
+
+vector<int> GetShortDistance(const unordered_map<int, vector<pair<int, double>>>& graph, int start, int end) {
+    priority_queue<pair<double, int>, vector<pair<double, int>>, greater<pair<double, int>>> pq;
+    unordered_map<int, double> distances;
+    unordered_map<int, int> previous;
+    vector<int> path;
+
+    for (const auto& pair : graph) {
+        distances[pair.first] = numeric_limits<double>::infinity();
+    }
+    distances[start] = 0;
+    pq.push({ 0, start });
+
+    while (!pq.empty()) {
+        int current = pq.top().second;
+        pq.pop();
+
+        if (current == end) break;
+
+        for (const auto& neighbor : graph.at(current)) {
+            double newDist = distances[current] + neighbor.second;
+            if (newDist < distances[neighbor.first]) {
+                distances[neighbor.first] = newDist;
+                previous[neighbor.first] = current;
+                pq.push({ newDist, neighbor.first });
+            }
+        }
+    }
+
+    for (int at = end; at != start; at = previous[at]) {
+        path.push_back(at);
+    }
+    path.push_back(start);
+
+    return path;
+}
+
+int main() {
+    setlocale(LC_ALL, "Russian");
+    int pointCount = 100;
+
+    int end;
+    cout << "Введите номер точки назначения (0-" << pointCount - 1 << "): ";
+    cin >> end;
+
+    if (end < 0 || end >= pointCount) {
+        cout << "Неверный номер точки!" << endl;
+        return 1;
+    }
+
+    srand(time(0));
+    vector<Point> points = GenerateRandomPoints(pointCount);
+    unordered_map<int, vector<pair<int, double>>> graph = BuildGraph(points);
+
+    int start = 0;
+
+    vector<int> path = GetShortDistance(graph, start, end);
+
+    cout << "Путь от точки " << start << " до точки " << end << ": " << endl;
+    for (auto it = path.rbegin(); it != path.rend(); ++it) {
+        cout << "Индекс: " << *it << ", Координаты: (" << points[*it].x << ", " << points[*it].y << ")" << endl;
+    }
+
+    double totalCost = 0.0;
+    for (size_t i = 0; i < path.size() - 1; ++i) {
+        for (const auto& neighbor : graph.at(path[i])) {
+            if (neighbor.first == path[i + 1]) {
+                totalCost += neighbor.second;
+                break;
+            }
+        }
+    }
+    cout << "Общая стоимость пути: " << totalCost << " USD" << endl;
+
+    cout << "Все точки: " << endl;
+    for (int i = 0; i < pointCount; ++i) {
+        cout << "Индекс: " << i << ", Координаты: (" << points[i].x << ", " << points[i].y << ")" << endl;
+    }
+
+    return 0;
+}
+
+//Можно вариант в классе и с наследованием написать. Все общее и абстрактное выделяется в класс предок к примеру COST_PER_DISTANCE. 
+// В конструкторе у нас GenerateRandomPoints иницилиализируют вектор и константы специфические создаются вместе с классом и автоматически задаются. 
+// CalculateDistance приватный метод который используется внутри класса. После задания вершины следования вызывается в качестве публичных методов BuildGraph и GetShortDistance
+// Вариант с наследование подразумевате что точки могут генерироваться не только в круге а к примеру в квадрате и получится что-то типа патерна проектирования фабрика . 
+//Также можно выделить граф в отдельный класс и все что с ними связано, ничего не делал так как не было требований каких либо задание без деталей. 
+// Этот код я могу представить только в трех вариантах
+
+/*ОБЬЯСНЕНИЕ - используется алгоритм Дейкстры для нахождения кратчайшего пути он на каждом шаге ведет поиск следущей минимальной вершины граф, а не перебирает и засчет этого экономит скорость поиска пути
+Жадный алгоритм экономит время поиска . 
+Также используется priority_queue специальный контейнер за счет которого не нужно искать самый ближайший элемент он хранится всегда наверху и можно быстро получить его  , 
+сетлокаль добавлена так без нее вывод абракадабра  */
+
