@@ -10,7 +10,7 @@ Candle::Candle(Price open, Price high, Price low, Price close)
 
 bool Candle::BodyContains(Price price) const noexcept
 {
-	if(IsGreen())
+	if (IsGreen())
 	{
 		return price >= open_ && price <= close_;
 	}
