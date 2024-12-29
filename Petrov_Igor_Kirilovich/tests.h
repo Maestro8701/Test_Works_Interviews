@@ -78,5 +78,3 @@ bool TestIsGreen() {
 
     return true;
 }
-
-
