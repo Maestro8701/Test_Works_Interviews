@@ -6,7 +6,6 @@
 
 #include "tests.h"
 
-
 static std::vector<std::function<bool()>> tests;
 
 void InitTests()
@@ -56,6 +55,3 @@ int main()
     InitTests();
     return LaunchTests();
 }
-
-
-
