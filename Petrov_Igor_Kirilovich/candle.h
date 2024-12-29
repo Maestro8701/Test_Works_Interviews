@@ -9,7 +9,7 @@ private:
 	Price high_;
 	Price low_;
 	Price close_;
-	
+
 public:
 	Candle() = default;
 	Candle(Price open, Price high, Price low, Price close);
