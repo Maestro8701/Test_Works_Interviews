@@ -172,37 +172,6 @@ class Program
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
         Application.Run(new MainForm()); 
-
-
-
-
-        //Дублирующая проверка в консоли получения 
-        //Binance 
-        var client = new BinanceRestClient();
-        var price = await client.SpotApi.ExchangeData.GetPriceAsync("ETHUSDT");
-        Console.WriteLine($"Binance Rest client ticker price for ETHUSDT: {price.Data.Price}");
-
-
-        // Bybit
-        {
-            var restClient = new BybitRestClient();
-            var ticker = await restClient.V5Api.ExchangeData.GetSpotTickersAsync("ETHUSDT");
-            Console.WriteLine($"Bybit Rest client ticker price for ETHUSDT: {ticker.Data.List.First().LastPrice}");
-        }
-
-        // Kucoin
-        {
-            var restClient = new KucoinRestClient();
-            var ticker = await restClient.SpotApi.ExchangeData.GetTickerAsync("ETH-USDT");
-            Console.WriteLine($"Kucoin Rest client ticker price for ETHUSDT: {ticker.Data.LastPrice}");
-        }
-
-        // Bitget
-        {
-            var restClient = new BitgetRestClient();
-            var ticker = await restClient.SpotApi.ExchangeData.GetTickerAsync("ETHUSDT_SPBL");
-            Console.WriteLine($"Bitget Rest client ticker price for ETHUSDT: {ticker.Data.ClosePrice}");
-        }
     }
 }
 
