@@ -1,1 +1,57 @@
 
+Яндекс.Директ:/ru
+Ревдинский рабочий:/ru/svrd/revda,/ru/svrd/pervik
+Газета уральских москвичей:/ru/msk,/ru/permobl,/ru/chelobl
+Крутая реклама:/ru/svrd
+Московский медиацентр:/ru/msk/center
+Питерская реклама:/ru/spb/center,/ru/spb/north
+Уральский охват:/ru/ekb/center,/ru/ekb/south,/ru/chely/center
+Сибирский маркет:/ru/nov/center,/ru/omsk/center,/ru/krasnoyarsk/center,/ru/krasnoyarsk/east
+Казанский канал:/ru/kzn/center
+Нижегородские новости:/ru/nn/center,/ru/nn/south
+Челябинский вестник:/ru/chely/center
+Уфимский экспресс:/ru/ufa/center,/ru/ufa/north
+Ростовская реклама:/ru/rostov/center
+Краснодарский медиа:/ru/krasnodar/center,/ru/krasnodar/south
+Воронежский охват:/ru/voronezh/center
+Волгоградские новости:/ru/volgograd/center
+Самарский канал:/ru/samara/center,/ru/samara/north
+Омский вестник:/ru/omsk/center
+Красноярский экспресс:/ru/krasnoyarsk/center,/ru/krasnoyarsk/east
+Владивостокский медиацентр:/ru/vladivostok/center
+Иркутский маркет:/ru/irkutsk/center
+Хабаровский канал:/ru/khabarovsk/center,/ru/khabarovsk/north
+Ярославские новости:/ru/yaroslavl/center
+Тульский вестник:/ru/tula/center
+Тверской экспресс:/ru/tver/center,/ru/tver/south
+Рязанский медиа:/ru/ryazan/center
+Пензенский охват:/ru/penza/center
+Кировский канал:/ru/kirov/center
+Чебоксарские новости:/ru/cheboksary/center
+Орловский вестник:/ru/orel/center
+Курганский экспресс:/ru/kurgan/center
+Томский медиацентр:/ru/tomsk/center,/ru/tomsk/north
+Барнаульский маркет:/ru/barnaul/center
+Сочинский канал:/ru/sochi/center,/ru/sochi/north
+Севастопольские новости:/ru/sevastopol/center,/ru/sevastopol/south
+Симферопольский вестник:/ru/simferopol/center
+Мурманский экспресс:/ru/murmansk/center
+Архангельский медиа:/ru/arhangelsk/center
+Владимирский охват:/ru/vladimir/center
+Калининградский канал:/ru/kaliningrad/center
+Смоленские новости:/ru/smolensk/center,/ru/smolensk/south
+Псковский вестник:/ru/pskov/center
+Великий Новгородский экспресс:/ru/veliky_novgorod/center
+Костромской медиацентр:/ru/kostroma/center
+Ивановский маркет:/ru/ivanovo/center
+Брянский канал:/ru/bryansk/center
+Курские новости:/ru/kursk/center
+Белгородский вестник:/ru/belgorod/center
+Липецкий экспресс:/ru/lipetsk/center
+Тамбовский медиа:/ru/tambov/center
+Астраханский охват:/ru/astrahan/center
+Вологодский канал:/ru/volg/center
+Петрозаводские новости:/ru/petrozavodsk/center,/ru/petrozavodsk/south
+Сыктывкарский вестник:/ru/syktyvkar/center
+Кировградский экспресс:/ru/kirovgrad/center
+Магнитогорский медиацентр:/ru/magnitogorsk/center
