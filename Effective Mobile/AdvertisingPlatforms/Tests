@@ -241,12 +241,5 @@ private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
         }
         return true;
     }
-
-
-    //LoadPlatforms_EmptyFile_ShouldSetIsLoadedToTrue()
-    //GetPlatformsForLocation_ExistingLocation_ShouldReturnPlatforms()
-    //GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty()
-
-
     }
 }
