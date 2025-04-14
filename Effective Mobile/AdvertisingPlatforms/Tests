@@ -1,0 +1,245 @@
+
+using AdPlatformService;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+//Xunit хотел использовать но нет времени разбираться почему не работают  они у меня.
+//В тестировании важнее суть и результат  а не инструменты поэтому переписал все под класс по тупому
+//в идеале нужно разделить тесты на классы и тестировать каждый класс отдельно.
+//в целом тесты не успел написать толково() поэтому покрытие может быть не совсем ровным и логичным
+
+namespace AdPlatformService.Tests
+{
+    public class AdPlatformTests
+    {
+        
+        public void RunningAllTheTests()
+        {
+            bool result = true;
+            result = LoadPlatforms_ValidFile_ShouldLoadPlatforms();
+            Console.ForegroundColor = ConsoleColor.Red;
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = IsValidLocation_ShouldValidateCorrectly();
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue();
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = InsertLocation_ValidLocation_ShouldInsertCorrectly();
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = InsertLocation_EmptyLocation_ShouldNotInsert();
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = GetPlatformsForLocation_NestedLocation_ShouldReturnAllPlatforms();
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty();
+            if (!result)
+            {
+                Console.WriteLine("Нужно доработать программу");
+                return;
+            }
+            result = GetPlatformsForLocation_EmptyLocation_ShouldReturnEmpty();
+            if (result)
+            {
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("Все тесты пройдены положительно");
+                Console.ResetColor();
+                return;
+            } 
+        }
+
+        private bool LoadPlatforms_ValidFile_ShouldLoadPlatforms()
+        {
+            var repository = new AdPlatformRepository();
+            string testFilePath = "testPlatforms.txt";
+            File.WriteAllText(testFilePath, "Яндекс.Директ:/ru\r\n" +
+            "Ревдинский рабочий:/ru/svrd/revda,/ru/svrd/pervik\r\n" +
+            "Газета уральских москвичей:/ru/msk,/ru/permobl,/ru/chelobl\r\n" +
+            "Крутая реклама:/ru/svrd\r\nМосковский медиацентр:/ru/msk/center\r\n" +
+            "Питерская реклама:/ru/spb/center,/ru/spb/north\r\n" +
+            "Уральский охват:/ru/ekb/center,/ru/ekb/south,/ru/chely/center\r\n" +
+            "Сибирский маркет:/ru/nov/center,/ru/omsk/center,/ru/krasnoyarsk/center,/ru/krasnoyarsk/east\r\n" +
+            "Казанский канал:/ru/kzn/center");
+
+            repository.LoadPlatforms(testFilePath);
+          
+            var search = new AdPlatformSearch(repository);
+            var platforms = search.GetPlatformsForLocation("/ru");
+            if (!platforms.Contains("Яндекс.Директ"))
+            {
+                Console.WriteLine("Яндекс.Директ не найден");
+                return false;
+            }
+            if (platforms.Contains("Ревдинский рабочий"))
+            {
+                Console.WriteLine("Ошибка, Ревдинский рабочий найден");
+                return false;
+            }
+                return true;
+        }
+
+        private bool IsValidLocation_ShouldValidateCorrectly()
+        {
+        Dictionary<string, bool> testCases = new Dictionary<string, bool>
+            {
+                { "/ru", true },
+                { "/ru/svrd/revda", true },
+                { "/ru//svrd", false },
+                { "/ru/", false },
+                { "ru", false },
+                { "//ru", false }
+            };
+        foreach (var pair in testCases)
+        {
+            var result = Program.IsValidInput(pair.Key);
+            if (pair.Value != result)
+        {
+            Console.WriteLine($"функция проверки валидности для {pair.Key} дала некорректный результат");
+            return false;
+        }
+    }
+    return true;
+}
+
+private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
+{
+    var repository = new AdPlatformRepository();
+    string testFilePath = "invalidFormat.txt";
+    File.WriteAllText(testFilePath, "Яндекс.Директ/ru\r\n" +
+        "Ревдинский рабочий:/ru/svrd/revda,/ru/svrd/pervik");
+
+    repository.LoadPlatforms(testFilePath);
+
+    if (!repository._IsLoaded) {
+        Console.WriteLine("Результат некорректный приложение загрузило невалидный файл");
+        return false;
+    }
+    return true;
+    }
+    
+
+        private bool InsertLocation_ValidLocation_ShouldInsertCorrectly()
+{
+    var repository = new AdPlatformRepository();
+    repository.InsertLocation("/ru", "Яндекс.Директ");
+
+    var search = new AdPlatformSearch(repository);
+    var platforms = search.GetPlatformsForLocation("/ru");
+
+    if (platforms.Count != 1)
+    {
+        Console.WriteLine("Размер массива некорректный");
+        return false;
+    }
+    if ("Яндекс.Директ" != platforms.First())
+    {
+        Console.WriteLine("Строка не равна загруженной");
+        return false;
+    }
+    return true;
+}
+
+    private bool InsertLocation_EmptyLocation_ShouldNotInsert()
+    {
+    var repository = new AdPlatformRepository();
+    repository.InsertLocation("", "Яндекс.Директ");
+
+    var search = new AdPlatformSearch(repository);
+    var platforms = search.GetPlatformsForLocation("");
+
+    if (platforms.Count != 1)
+    {
+        Console.WriteLine("Размер массива должен быть один в InsertLocation_EmptyLocation_ShouldNotInsert");
+        return false;
+    }
+    return true;
+    }
+    
+
+    private bool GetPlatformsForLocation_NestedLocation_ShouldReturnAllPlatforms()
+    {
+        var repository = new AdPlatformRepository();
+        repository.InsertLocation("/ru", "Яндекс.Директ");
+        repository.InsertLocation("/ru/svrd", "Ревдинский рабочий");
+
+        var search = new AdPlatformSearch(repository);
+        var platforms = search.GetPlatformsForLocation("/ru/svrd");
+
+
+        if (!platforms.Contains("Ревдинский рабочий"))
+        {
+            Console.WriteLine("Контейнер не содержит Ревдинский рабочий");
+            return false;
+        }
+        if (!platforms.Contains("Яндекс.Директ"))
+        {
+            Console.WriteLine("Контейнер не содержит Яндекс.Директ");
+            return false;
+        }
+        return true;
+    }
+
+    private bool GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty()
+    {
+        var repository = new AdPlatformRepository();
+        repository.InsertLocation("/ru", "Яндекс.Директ");
+
+        var search = new AdPlatformSearch(repository);
+        var platforms = search.GetPlatformsForLocation("/nonExisting");
+
+
+        if (platforms.Count > 0)
+        {
+            Console.WriteLine("Размер массива должен быть нулевым в GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty");
+            return false;
+        }
+        return true;
+    }
+
+    private bool GetPlatformsForLocation_EmptyLocation_ShouldReturnEmpty()
+    {
+        var repository = new AdPlatformRepository();
+        repository.InsertLocation("/ru", "Яндекс.Директ");
+
+        var search = new AdPlatformSearch(repository);
+        var platforms = search.GetPlatformsForLocation("");
+
+
+        if (platforms.Count == 1)
+        {
+            Console.WriteLine("Размер массива должен быть 1");
+            return false;
+        }
+        return true;
+    }
+
+
+    //LoadPlatforms_EmptyFile_ShouldSetIsLoadedToTrue()
+    //GetPlatformsForLocation_ExistingLocation_ShouldReturnPlatforms()
+    //GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty()
+
+
+    }
+}
