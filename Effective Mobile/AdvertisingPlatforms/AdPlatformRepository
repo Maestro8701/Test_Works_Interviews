@@ -1,1 +1,80 @@
+namespace AdPlatformService
+{
+    public class TrieNode
+    {
+        public Dictionary<char, TrieNode> Children { get; } = new Dictionary<char, TrieNode>();
+        public HashSet<string> Platforms { get; } = new HashSet<string>();
+    }
+    public class AdPlatformRepository
+    {
+        public TrieNode _root { get; set; } = new TrieNode();
+        public bool _IsLoaded { get; private set; } = false;
+
+        public void LoadPlatforms(string filePath)
+        {
+            try
+            {
+                var lines = File.ReadAllLines(filePath);
+                int lineNumber = 0;
+
+                foreach (var line in lines)
+                {
+                    lineNumber++;
+                    var parts = line.Split(':');
+                    if (parts.Length != 2)
+                    {
+                        Console.WriteLine($"Некорректная строка (строка {lineNumber}): {line}. Не найденна : .");
+                        _IsLoaded = true;
+                        return;
+                    }
+
+                    var name = parts[0].Trim();
+                    var locations = parts[1].Split(',')
+                                             .Select(loc => loc.Trim())
+                                             .ToList();
+                    if (locations.Count == 0)
+                    {
+                        Console.WriteLine($"Некорректная строка (строка {lineNumber}): {line}. Ожидается, что после двоеточия будут указаны локации.");
+                        _IsLoaded = true;
+                        return;
+                    }
+
+                    foreach (var location in locations)
+                    {
+                        InsertLocation(location, name);
+                    }
+                }
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine("Ошибка: файл не найден. Убедитесь, что путь к файлу правильный. " + ex.Message);
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine("Ошибка при чтении файла: " + ex.Message);
+            }
+            catch (FormatException ex)
+            {
+                Console.WriteLine("Ошибка формата данных в файле: " + ex.Message);
+            }
+        }
+
+        //метод задуман для внутреннего использования но с private изменен на public для тестирования кода
+        public void InsertLocation(string location, string platformName)
+        {
+            var node = _root;
+            foreach (var ch in location)
+            {
+                if (!node.Children.ContainsKey(ch))
+                {
+                    node.Children[ch] = new TrieNode();
+                }
+                node = node.Children[ch];
+            }
+            node.Platforms.Add(platformName);
+        }
+
+    }
+
+}
 
