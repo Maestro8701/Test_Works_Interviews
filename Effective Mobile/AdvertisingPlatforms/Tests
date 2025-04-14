@@ -130,23 +130,22 @@ namespace AdPlatformService.Tests
     return true;
 }
 
-private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
-{
-    var repository = new AdPlatformRepository();
-    string testFilePath = "invalidFormat.txt";
-    File.WriteAllText(testFilePath, "Яндекс.Директ/ru\r\n" +
+    private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
+    {
+        var repository = new AdPlatformRepository();
+        string testFilePath = "invalidFormat.txt";
+        File.WriteAllText(testFilePath, "Яндекс.Директ/ru\r\n" +
         "Ревдинский рабочий:/ru/svrd/revda,/ru/svrd/pervik");
 
-    repository.LoadPlatforms(testFilePath);
+        repository.LoadPlatforms(testFilePath);
 
-    if (!repository._IsLoaded) {
-        Console.WriteLine("Результат некорректный приложение загрузило невалидный файл");
-        return false;
-    }
-    return true;
+        if (!repository._IsLoaded) {
+            Console.WriteLine("Результат некорректный приложение загрузило невалидный файл");
+            return false;
+        }
+        return true;
     }
     
-
     private bool InsertLocation_ValidLocation_ShouldInsertCorrectly()
     {
         var repository = new AdPlatformRepository();
