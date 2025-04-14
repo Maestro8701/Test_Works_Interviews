@@ -22,42 +22,49 @@ namespace AdPlatformService.Tests
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = IsValidLocation_ShouldValidateCorrectly();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = InsertLocation_ValidLocation_ShouldInsertCorrectly();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = InsertLocation_EmptyLocation_ShouldNotInsert();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = GetPlatformsForLocation_NestedLocation_ShouldReturnAllPlatforms();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
+                Console.ResetColor();
                 return;
             }
             result = GetPlatformsForLocation_EmptyLocation_ShouldReturnEmpty();
