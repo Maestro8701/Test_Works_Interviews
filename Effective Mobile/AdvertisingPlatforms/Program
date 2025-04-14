@@ -1,1 +1,87 @@
+using AdPlatformService.Tests;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+//Акцентированными решениями усложнил код так как задача показалась средней сложности и появилось время для полировки кода вот детали которые я смог усложнить 
+//1) Усложненный ускоренный поиск = Используется префиксное дерево для ускорения поиска, вначале написал по простому
+//но потом понял что мы делаем лишнюю работу когда 2 раз по услоновному/ru проходимся 
+//2) Ускорение отзыва при вводе = Кеширование регулярного выражения чтобы ускорить проверку соответствия и отзывчивость при вводе  
+//3) Психология цвета = Используется стереотипная цветовая индикация для того чтобы сообщения о ошибке ввода были более агрессивные а вывод был более положительным зеленым
+//4) Отзывчивая работа = Если совершен любой неправильный шаг в программе выходит уведомление 
+//5) Корректная база данных = Процедура создания базы данных проверяет коректность создания базы чтобы выдать корректный результат
+//6) Принцип Solid = один класс одна зона отвественности
+
+namespace AdPlatformService
+{
+    class Program
+    {
+        private static readonly Regex LocationRegex = new Regex(@"^/(?![/\s])([^/\s]+(/[^/\s]+)*)?$", RegexOptions.Compiled);
+        public static bool IsValidInput(string location)
+        {
+            return LocationRegex.IsMatch(location);
+        }
+        static void Main()
+        {
+            AdPlatformTests tests = new AdPlatformTests();
+            tests.RunningAllTheTests();
+            //Если нужны тесты расскоментируйте следует учесть что там в некоторых тестах подаются поврежденные данные
+            //и поэтому будет консольный вывод соотвествующий который не имеет отношения к тестам как как если данные поврежденные
+            //установлен флаг что условно файл битый и результат будет некорректен 
+            var repository = new AdPlatformRepository();
+            string filePath = "base.txt";
+
+            repository.LoadPlatforms(filePath);
+            if (repository._IsLoaded) 
+            {
+                Console.WriteLine("База данных не загружена корректно. Завершение программы.");
+                return;
+            }
+
+            var search = new AdPlatformSearch(repository);
+
+            while (true)
+            {
+                Console.WriteLine("Введите локацию(корректный формат \"/любые_символы/любые_символы\") для поиска рекламных площадок \n(или 'выход' для завершения):");
+                string location = Console.ReadLine();
+
+                if (location.ToLower() == "выход")
+                {
+                    break;
+                }
+
+                if (!IsValidInput(location))
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Некорректный ввод. Убедитесь, что локация начинается с '/' и содержит символы после нее, \n также не содержит пустоты между / и / в любом месте если локация вложенная. " +
+                        "Любые пробелы между / и / делают ввод некорректным\n");
+                    Console.ResetColor();
+                    continue;
+                }
+
+                var platforms = search.GetPlatformsForLocation(location);
+
+                if (!platforms.Any())
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Рекламные площадки не найдены для локации {location}.\n");
+                    Console.ResetColor();
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine($"Рекламные площадки для локации {location}:");
+                    Console.ResetColor();
+                    foreach (var platform in platforms)
+                    {
+                        Console.WriteLine(platform);
+                    }
+                    Console.WriteLine("\n");
+                }
+            }
+        }
+    }
+}
 
