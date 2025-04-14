@@ -25,8 +25,8 @@ namespace AdPlatformService
         }
         static void Main()
         {
-            AdPlatformTests tests = new AdPlatformTests();
-            tests.RunningAllTheTests();
+            //AdPlatformTests tests = new AdPlatformTests();
+            //tests.RunningAllTheTests();
             //Если нужны тесты расскоментируйте следует учесть что там в некоторых тестах подаются поврежденные данные
             //и поэтому будет консольный вывод соотвествующий который не имеет отношения к тестам как как если данные поврежденные
             //установлен флаг что условно файл битый и результат будет некорректен 
@@ -84,4 +84,3 @@ namespace AdPlatformService
         }
     }
 }
-
