@@ -107,8 +107,8 @@ namespace AdPlatformService.Tests
                 return true;
         }
 
-        private bool IsValidLocation_ShouldValidateCorrectly()
-        {
+    private bool IsValidLocation_ShouldValidateCorrectly()
+    {
         Dictionary<string, bool> testCases = new Dictionary<string, bool>
             {
                 { "/ru", true },
@@ -127,8 +127,8 @@ namespace AdPlatformService.Tests
             return false;
         }
     }
-    return true;
-}
+        return true;
+    }
 
     private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
     {
