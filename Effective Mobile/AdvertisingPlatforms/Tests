@@ -147,13 +147,13 @@ private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
     }
     
 
-        private bool InsertLocation_ValidLocation_ShouldInsertCorrectly()
-{
-    var repository = new AdPlatformRepository();
-    repository.InsertLocation("/ru", "Яндекс.Директ");
+    private bool InsertLocation_ValidLocation_ShouldInsertCorrectly()
+    {
+        var repository = new AdPlatformRepository();
+        repository.InsertLocation("/ru", "Яндекс.Директ");
 
-    var search = new AdPlatformSearch(repository);
-    var platforms = search.GetPlatformsForLocation("/ru");
+        var search = new AdPlatformSearch(repository);
+        var platforms = search.GetPlatformsForLocation("/ru");
 
     if (platforms.Count != 1)
     {
