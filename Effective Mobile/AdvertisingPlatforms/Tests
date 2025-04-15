@@ -13,11 +13,11 @@ namespace AdPlatformService.Tests
 {
     public class AdPlatformTests
     {
-        
+
         public void RunningAllTheTests()
         {
             bool result = true;
-            result = LoadPlatforms_ValidFile_ShouldLoadPlatforms();
+            result = CHeckingThePlatformSearch();
             Console.ForegroundColor = ConsoleColor.Red;
             if (!result)
             {
@@ -25,59 +25,61 @@ namespace AdPlatformService.Tests
                 Console.ResetColor();
                 return;
             }
-            result = IsValidLocation_ShouldValidateCorrectly();
+            result = CheckLocationValidation();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
             }
-            result = LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue();
+            result = СheckingTheLoadingOfAnInvalidString();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
             }
-            result = InsertLocation_ValidLocation_ShouldInsertCorrectly();
+            result = CheckingTheLocationInsertionMethod();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
             }
-            result = InsertLocation_EmptyLocation_ShouldNotInsert();
+            result = CheckingMethodInsertingLocationWithEmptyString();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
             }
-            result = GetPlatformsForLocation_NestedLocation_ShouldReturnAllPlatforms();
+            result = CheckingWhetherMethodReturnsAllPlatforms();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
             }
-            result = GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty();
+            result = CheckingSearchingNonExistentLocation();
             if (!result)
             {
                 Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
             }
-            result = GetPlatformsForLocation_EmptyLocation_ShouldReturnEmpty();
-            if (result)
+            result = CheckingSearchEmptyLocationReturnsEmptyArray();
+            if (!result)
             {
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Все тесты пройдены положительно");
+                Console.WriteLine("Нужно доработать программу");
                 Console.ResetColor();
                 return;
-            } 
-        }
+            }
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Все тесты пройдены положительно");
+            Console.ResetColor();
+        } 
 
-        private bool LoadPlatforms_ValidFile_ShouldLoadPlatforms()
+        private bool CHeckingThePlatformSearch()
         {
             var repository = new AdPlatformRepository();
             string testFilePath = "testPlatforms.txt";
@@ -107,7 +109,7 @@ namespace AdPlatformService.Tests
                 return true;
         }
 
-    private bool IsValidLocation_ShouldValidateCorrectly()
+    private bool CheckLocationValidation()
     {
         Dictionary<string, bool> testCases = new Dictionary<string, bool>
             {
@@ -130,7 +132,7 @@ namespace AdPlatformService.Tests
         return true;
     }
 
-    private bool LoadPlatforms_InvalidFileFormat_ShouldSetIsLoadedToTrue()
+    private bool СheckingTheLoadingOfAnInvalidString()
     {
         var repository = new AdPlatformRepository();
         string testFilePath = "invalidFormat.txt";
@@ -146,7 +148,8 @@ namespace AdPlatformService.Tests
         return true;
     }
     
-    private bool InsertLocation_ValidLocation_ShouldInsertCorrectly()
+
+    private bool CheckingTheLocationInsertionMethod()
     {
         var repository = new AdPlatformRepository();
         repository.InsertLocation("/ru", "Яндекс.Директ");
@@ -167,7 +170,7 @@ namespace AdPlatformService.Tests
     return true;
 }
 
-    private bool InsertLocation_EmptyLocation_ShouldNotInsert()
+    private bool CheckingMethodInsertingLocationWithEmptyString()
     {
     var repository = new AdPlatformRepository();
     repository.InsertLocation("", "Яндекс.Директ");
@@ -184,7 +187,7 @@ namespace AdPlatformService.Tests
     }
     
 
-    private bool GetPlatformsForLocation_NestedLocation_ShouldReturnAllPlatforms()
+    private bool CheckingWhetherMethodReturnsAllPlatforms()
     {
         var repository = new AdPlatformRepository();
         repository.InsertLocation("/ru", "Яндекс.Директ");
@@ -207,7 +210,7 @@ namespace AdPlatformService.Tests
         return true;
     }
 
-    private bool GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty()
+    private bool CheckingSearchingNonExistentLocation()
     {
         var repository = new AdPlatformRepository();
         repository.InsertLocation("/ru", "Яндекс.Директ");
@@ -224,7 +227,7 @@ namespace AdPlatformService.Tests
         return true;
     }
 
-    private bool GetPlatformsForLocation_EmptyLocation_ShouldReturnEmpty()
+    private bool CheckingSearchEmptyLocationReturnsEmptyArray()
     {
         var repository = new AdPlatformRepository();
         repository.InsertLocation("/ru", "Яндекс.Директ");
@@ -233,7 +236,7 @@ namespace AdPlatformService.Tests
         var platforms = search.GetPlatformsForLocation("");
 
 
-        if (platforms.Count == 1)
+        if (platforms.Count > 0)
         {
             Console.WriteLine("Размер массива должен быть 1");
             return false;
