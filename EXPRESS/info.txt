@@ -22,3 +22,9 @@ Main и Classes
 что имеет место быть, но не тогда, когда у тебя все тестовое в двух файлах
 try catch нет, одна ошибка и приложение ложится полностью
 + не сделал сокет
+==================================================
+Рабочие примеры для соккета и 
+https://github.com/JKorf/Binance.Net/blob/master/Examples/ConsoleClient/Program.cs
+https://github.com/JKorf/Bitget.Net/blob/main/Examples/Bitget.Examples.Console/Program.cs
+https://github.com/JKorf/Kucoin.Net/blob/master/Examples/Kucoin.Examples.Console/Program.cs
+https://github.com/JKorf/Bybit.Net/blob/main/Examples/Bybit.Examples.Console/Program.cs
