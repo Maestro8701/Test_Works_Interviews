@@ -22,7 +22,6 @@ namespace AdPlatformService
 
         private void FindPlatforms(TrieNode node, string location, HashSet<string> result, string currentPath = "")
         {
-            // Если текущий путь соответствует локации или её родительским путям, добавляем платформы
             if (location.StartsWith(currentPath) || location.StartsWith(currentPath + "/") || currentPath == "")
             {
                 foreach (var platform in node.Platforms)
@@ -31,7 +30,6 @@ namespace AdPlatformService
                 }
             }
 
-            // Рекурсивно ищем платформы в дочерних узлах
             foreach (var (ch, childNode) in node.Children)
             {
                 FindPlatforms(childNode, location, result, currentPath + ch);
