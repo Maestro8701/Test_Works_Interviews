@@ -238,7 +238,7 @@ namespace AdPlatformService.Tests
 
         if (platforms.Count > 0)
         {
-            Console.WriteLine("Размер массива должен быть 1");
+            Console.WriteLine("Размер массива должен быть ноль");
             return false;
         }
         return true;
