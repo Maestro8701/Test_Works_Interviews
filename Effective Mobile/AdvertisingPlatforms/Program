@@ -78,6 +78,7 @@ namespace AdPlatformService
                     {
                         Console.WriteLine(platform);
                     }
+                    //перенос строки нужен для визуального отделения чтобы каждый запрос выделялся отдельно а не был общей кашей
                     Console.WriteLine("\n");
                 }
             }
