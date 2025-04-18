@@ -221,7 +221,7 @@ namespace AdPlatformService.Tests
 
         if (platforms.Count > 0)
         {
-            Console.WriteLine("Размер массива должен быть нулевым в GetPlatformsForLocation_NonExistingLocation_ShouldReturnEmpty");
+            Console.WriteLine("Размер массива должен быть нулевым");
             return false;
         }
         return true;
