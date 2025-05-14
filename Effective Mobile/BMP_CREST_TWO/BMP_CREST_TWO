@@ -1,0 +1,180 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <vector>
+#include <windows.h>
+
+//После этого задания на БМП третьего по счету я уже суперсолдат BMP, решил все проблемы предыдущего упрощенного тестового с бмп
+//у меня была проблема со сдвигом которая я не понял откуда есть и решал ее костылями просто сдвигом на глаз цикла в консоли
+//тут я выяснил что есть оказывается есть цветовая таблица без которой выходное изображение пустое и байты резервные я так понял нужно записать тоже
+//Плюс в некоторых местах бред исправил который написал в прошлый раз так как не успевал и задача был собрать минимально рабочий прототип а не отшлифовать его
+// В некоторых местах код отшлифованн из-за избытка времени
+
+class BMPDrawerCross {
+private:
+    BITMAPFILEHEADER fileHeader_;
+    BITMAPINFOHEADER infoHeader_;
+    std::vector<unsigned char> imageData_;
+    std::vector<unsigned char> colorTable_;
+    int width_;
+    int height_;
+    int paddingSize_;
+    unsigned char colorCross_[3] = { 0, 0, 0 };
+    const int reserveBytes_ = 52;
+    const int colorTableSize_ = 32;
+
+    //чтобы не путаться в цифрах итерации цикла расписанны сбоку  с разными примерами цифры к примеру вертикальная линия 3 1 3 4 подается на вход 
+    //2 пара цифр это вычисление горизонтальной линии 1 4 4 4, когда много цифр в уме могут возникать путаница так как все нужно держать в уме 
+    // поэтому я писал проверку алгоритма на примере одной итерации когда цифры физически прописанны убедиться в точной работе алгоритма проще
+    void DrawLine(int startX, int startY, int endX, int endY, unsigned char color[3]) {
+        // Алгоритм Брезенхема для рисования линии
+        int deltaX = abs(endX - startX); // Разница по оси X // 3 - 3 = 0                           // 4 -1
+        int deltaY = abs(endY - startY); // Разница по оси Y // 4 - 1 = 3                           // 4 - 4
+        int stepX = (startX < endX) ? 1 : -1; // Шаг по оси X (1 или -1) // -1                      // 1
+        int stepY = (startY < endY) ? 1 : -1; // Шаг по оси Y (1 или -1) // 1                       // - 1
+        int error = deltaX - deltaY; // Начальная ошибка // 0 - 3 = -3                              // 3 - 0
+
+        while (true) {
+            SetPixel(startX, startY, color); // Устанавливаем цвет пикселя в текущих координатах  
+            if (startX == endX && startY == endY) break; // Если достигли конечной точки, выходим из цикла
+
+            int errorDouble = error * 2; // Удваиваем значение ошибки для упрощения расчетов // -6 //6
+            // Проверяем, нужно ли двигаться по оси X
+            if (errorDouble > -deltaY) { // -6 > 3                                                 // 6 > 0
+                error -= deltaY; // Корректируем ошибку // не выполняется                          // 3 -= 0
+                startX += stepX; // Двигаемся по оси X  // не выполняется                          // 1 += 1
+            }
+
+            // Проверяем, нужно ли двигаться по оси Y
+            if (errorDouble < deltaX) { // -6 < 0                                                  // 6 < 4
+                error += deltaX; // Корректируем ошибку // -3 += 0                                 // не выполняется 
+                startY += stepY; // Двигаемся по оси Y  // 1 += 1                                  // не выполняется 
+            }
+        }
+    }
+
+    void SetPixel(int x, int y, unsigned char color[3]) {
+        if (x >= 0 && x < width_ && y >= 0 && y < height_) {
+            int index = (y * width_ + x) * (infoHeader_.biBitCount / 8);
+            imageData_[index] = color[0];       // Blue
+            imageData_[index + 1] = color[1];   // Green
+            imageData_[index + 2] = color[2];   // Red
+        }
+    }
+
+public:
+    BMPDrawerCross() = default;
+
+    ~BMPDrawerCross() = default;
+    
+    bool OpenBMP(const std::string& fileName) {
+        std::ifstream file(fileName, std::ios::binary);
+        if (!file.is_open()) {
+            return false;
+        }
+        
+        file.read(reinterpret_cast<char*>(&fileHeader_), sizeof(fileHeader_));
+        file.read(reinterpret_cast<char*>(&infoHeader_), sizeof(infoHeader_));
+        colorTable_.resize(colorTableSize_);
+        file.read(reinterpret_cast<char*>(&colorTable_), sizeof(colorTable_));
+        width_ = infoHeader_.biWidth;
+        height_ = abs(infoHeader_.biHeight);
+        paddingSize_ = (4 - (width_ * (infoHeader_.biBitCount / 8)) % 4) % 4;
+        int imageSize = width_ * height_ * (infoHeader_.biBitCount / 8);
+        imageData_.resize(imageSize);
+        if (imageData_.size() == 0) {
+            return false;
+        }
+        file.seekg(fileHeader_.bfOffBits, std::ios::beg);
+        unsigned char* pImageData = imageData_.data();
+        for (int y = 0; y < height_; ++y) {
+            file.read(reinterpret_cast<char*>(pImageData), width_ * (infoHeader_.biBitCount / 8));
+            file.ignore(paddingSize_);
+            pImageData += width_ * (infoHeader_.biBitCount / 8);
+        }
+
+        file.close();
+        return true;
+    }
+
+    void DisplayBMP() const {
+        for (int y = height_ - 1; y >= 0; --y) { 
+            for (int x = 0; x < width_; ++x) {
+                size_t index = y * width_ * (infoHeader_.biBitCount / 8) + x * (infoHeader_.biBitCount / 8);
+                unsigned char blue = imageData_[index];
+                unsigned char green = imageData_[index + 1];
+                unsigned char red = imageData_[index + 2];
+
+                if (red == 255 && green == 255 && blue == 255) {
+                    std::cout << " "; // Белый цвет
+                }
+                else if (red == 0 && green == 0 && blue == 0) {
+                    std::cout << "*"; // Черный цвет
+                }
+            }
+            std::cout << std::endl;
+        }
+    }
+
+    bool SaveBMP(const std::string& fileName) const {
+        std::ofstream file(fileName, std::ios::binary);
+        if (!file.is_open()) {
+            return false;
+        }
+
+        file.write(reinterpret_cast<const char*>(&fileHeader_), sizeof(fileHeader_));
+        file.write(reinterpret_cast<const char*>(&infoHeader_), sizeof(infoHeader_));
+        file.write(reinterpret_cast<const char*>(&colorTable_), sizeof(colorTable_));
+        unsigned char emptyBytes[52] = { 0 }; 
+        file.write(reinterpret_cast<const char*>(emptyBytes), reserveBytes_);
+        unsigned char padding[3] = { 0, 0, 0 }; 
+
+        for (int y = 0; y < height_; ++y) {
+            file.write(reinterpret_cast<const char*>(&imageData_[y * width_ * (infoHeader_.biBitCount / 8)]), width_ * (infoHeader_.biBitCount / 8));
+            file.write(reinterpret_cast<const char*>(padding), paddingSize_);
+        }
+
+        file.close();
+        return true;
+    }
+
+    void DrawCross() {
+        int centerX = width_ / 2;
+        int centerY = height_ / 2;
+        DrawLine(centerX, 0, centerX, height_ - 1, colorCross_);
+        DrawLine(0, centerY, width_ - 1, centerY, colorCross_);
+    }
+};
+
+int main(int argc, char* argv[]) {
+    setlocale(LC_ALL, "Russian");
+    if (argc != 2) {
+        std::cerr << "Используйте: BMP_CREST_TWO.exe <путь_к_bmp_файлу>" << std::endl;
+        return 1;
+    }
+
+    std::string filePath = argv[1];
+    BMPDrawerCross drawer;
+
+    if (drawer.OpenBMP(argv[1])) {
+        drawer.DisplayBMP();
+        drawer.DrawCross(); 
+        drawer.DisplayBMP(); 
+    } else {
+        std::cerr << "Не удалось открыть BMP файл." << std::endl;
+        return 1;
+    }
+
+    std::string nameFile;
+    std::cout << "Введите имя файла!" << std::endl;
+    std::cin >> nameFile;
+    nameFile += ".bmp";
+
+    if (drawer.SaveBMP(nameFile)) {
+        std::cout << "Изображение успешно сохранено как " << nameFile << std::endl;
+    } else {
+        std::cerr << "Не удалось сохранить BMP файл." << std::endl;
+    }
+
+    return 0;
+}
