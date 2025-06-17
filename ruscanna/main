@@ -1,0 +1,165 @@
+# -- coding: utf-8 --
+import cv2
+import numpy as np
+from pyzbar.pyzbar import decode
+
+tracked_qrcodes = {}
+qr_colors = {}
+detector = cv2.AKAZE_create()
+matcher = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck=True)
+prev_H = np.eye(3, dtype=np.float32)
+smoothing_factor = 0.8  
+
+def init_kalman(speed=0.0):
+    kalman = cv2.KalmanFilter(4, 2)
+    kalman.measurementMatrix = np.array([[1, 0, 0, 0],
+                                         [0, 1, 0, 0]], np.float32)
+    kalman.transitionMatrix = np.array([[1, 0, 1, 0],
+                                        [0, 1, 0, 1],
+                                        [0, 0, 1, 0],
+                                        [0, 0, 0, 1]], np.float32)
+    kalman.processNoiseCov = np.eye(4, dtype=np.float32) * 0.03  
+
+    measurement_noise = max(0.5, 10.0 - speed * 0.2) 
+    kalman.measurementNoiseCov = np.eye(2, dtype=np.float32) * measurement_noise
+
+    return kalman
+
+def init_kalman_points(points, speed=0.0):
+    points = np.array(points, dtype=np.float32)
+    pts_flat = points.reshape(-1)
+    if pts_flat.size != 8:
+        raise ValueError(f"Expected 8 elements for points, got {pts_flat.size}")
+    kalman = cv2.KalmanFilter(8, 8)
+    kalman.measurementMatrix = np.eye(8, dtype=np.float32)
+    kalman.transitionMatrix = np.eye(8, dtype=np.float32)
+    kalman.processNoiseCov = np.eye(8, dtype=np.float32) * 0.03
+
+    measurement_noise = max(0.5, 10.0 - speed * 0.2)
+    kalman.measurementNoiseCov = np.eye(8, dtype=np.float32) * measurement_noise
+
+    kalman.statePre[:8, 0] = points.reshape(-1)
+    return kalman
+
+cap = cv2.VideoCapture(0)
+prev_gray = None
+prev_keypoints = None
+prev_descriptors = None
+
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    height, width = frame.shape[:2]
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    decoded_objects = decode(gray)
+    detected_data = set()
+
+    for obj in decoded_objects:
+        data = obj.data.decode('utf-8')
+        detected_data.add(data)
+        if len(obj.polygon) != 4:
+            print(f"Warning: QR-code polygon has {len(obj.polygon)} points, expected 4. Skipping.")
+            continue
+        points = np.array([point for point in obj.polygon], dtype=np.float32).reshape(-1, 1, 2)
+        center = np.mean(points.reshape(-1, 2), axis=0).astype(np.float32)
+        if data not in qr_colors:
+            qr_colors[data] = tuple(np.random.randint(0, 255, 3).tolist())
+        if data not in tracked_qrcodes:
+            kalman_center = init_kalman()
+            kalman_center.correct(center)
+            kalman_points = init_kalman_points(points)
+            kalman_points.correct(points.reshape(-1))
+            tracked_qrcodes[data] = {
+                'points': points,
+                'lifetime': 40,
+                'kalman_center': kalman_center,
+                'kalman_points': kalman_points,
+                'center': center,
+                'prev_center': center.copy(),  
+                'speed': 0.0, 
+            }
+        else:
+            movement = np.linalg.norm(center - tracked_qrcodes[data]['center'])
+            tracked_qrcodes[data]['speed'] = movement
+            tracked_qrcodes[data]['prev_center'] = tracked_qrcodes[data]['center'].copy()
+            tracked_qrcodes[data]['points'] = points
+            tracked_qrcodes[data]['lifetime'] = 40
+            tracked_qrcodes[data]['kalman_center'].correct(center)
+            tracked_qrcodes[data]['kalman_points'].correct(points.reshape(-1))
+            tracked_qrcodes[data]['center'] = center
+
+    if prev_gray is not None:
+        keypoints2, descriptors2 = detector.detectAndCompute(gray, None)
+        if prev_descriptors is not None and descriptors2 is not None:
+            matches = matcher.match(prev_descriptors, descriptors2)
+            matches = sorted(matches, key=lambda x: x.distance)
+            if len(matches) > 10:
+                src_pts = np.float32([prev_keypoints[m.queryIdx].pt for m in matches]).reshape(-1, 1, 2)
+                dst_pts = np.float32([keypoints2[m.trainIdx].pt for m in matches]).reshape(-1, 1, 2)
+                H, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC, 7.0)
+                if H is not None:
+                    avg_speed = np.mean([t['speed'] for t in tracked_qrcodes.values()]) if tracked_qrcodes else 0.0
+                    speed_threshold = 30  
+                    if avg_speed > speed_threshold:
+                        dynamic_smoothing = 0.2  
+                    else:
+                        dynamic_smoothing = max(0.6, smoothing_factor - avg_speed * 0.005)  
+
+                    H = dynamic_smoothing * prev_H + (1 - dynamic_smoothing) * H
+                    prev_H = H
+
+                    for data, info in tracked_qrcodes.items():
+                        if data not in detected_data and info['points'] is not None:
+                            transformed_points = cv2.perspectiveTransform(info['points'], H)
+
+                            predicted_points = info['kalman_points'].predict()
+                            predicted_points_reshaped = predicted_points.reshape(-1, 2)
+
+                            info['kalman_points'].correct(transformed_points.reshape(-1))
+
+                            info['points'] = transformed_points
+                            center = np.mean(transformed_points.reshape(-1, 2), axis=0).astype(np.float32)
+
+                            info['kalman_center'].correct(center)
+                            predicted_center = info['kalman_center'].predict()
+                            if predicted_center.shape == (4, 1):
+                                new_center = predicted_center[:2].flatten()
+                                old_center = info['center']
+                                if np.linalg.norm(new_center - old_center) < min(100, 20 + info['speed'] * 2):
+                                    info['center'] = new_center
+                                else:
+                                    info['center'] = center
+
+        prev_keypoints = keypoints2
+        prev_descriptors = descriptors2
+
+    to_delete = []
+    for data in list(tracked_qrcodes.keys()):
+        if data not in detected_data:
+            speed_factor = min(1.5, 1.0 + tracked_qrcodes[data]['speed'] / 15.0)  
+            tracked_qrcodes[data]['lifetime'] -= speed_factor
+            if tracked_qrcodes[data]['lifetime'] <= 0:
+                to_delete.append(data)
+    for data in to_delete:
+        del tracked_qrcodes[data]
+
+    for data, info in tracked_qrcodes.items():
+        center = info['center']
+        if center.shape != (2,):
+            continue
+        x, y = int(center[0]), int(center[1])
+        if 0 <= x < width and 0 <= y < height:
+            cv2.circle(frame, (x, y), 10, qr_colors[data], -1)
+
+    prev_gray = gray.copy()
+
+    cv2.imshow("QR Tracker", frame)
+    key = cv2.waitKey(1)
+    if key == 27:
+        break
+
+cap.release()
+cv2.destroyAllWindows()
