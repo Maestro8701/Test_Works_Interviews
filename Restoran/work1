@@ -1,1 +1,46 @@
+-- Таблица ресторанов (Concepts)
+CREATE TABLE Concepts (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL,          -- Название ресторана (может повторяться)
+    City NVARCHAR(100) NOT NULL,
+    MainGroup NVARCHAR(255) NOT NULL
+);
 
+-- Таблица категорий блюд (DishCategories)
+CREATE TABLE DishCategories (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL            -- Название категории (без уникальности)
+);
+
+-- Таблица блюд (Dishes)
+CREATE TABLE Dishes (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    Name NVARCHAR(255) NOT NULL,
+    CategoryID INT NOT NULL,
+    CONSTRAINT FK_Dishes_DishCategories FOREIGN KEY (CategoryID)
+        REFERENCES DishCategories(ID)
+        ON DELETE CASCADE
+);
+
+-- Таблица продаж (Sales)
+CREATE TABLE Sales (
+    ID INT IDENTITY(1,1) PRIMARY KEY,
+    ConceptID INT NOT NULL,
+    DishID INT NOT NULL,
+    Quantity INT NOT NULL,
+    AvgPriceWithoutDiscount DECIMAL(18,2) NULL,
+    CostPrice DECIMAL(18,2) NULL,
+    DiscountAmount DECIMAL(18,2) NULL,
+    PriceWithDiscount DECIMAL(18,2) NULL,
+    Period NVARCHAR(7) NOT NULL,
+    CONSTRAINT FK_Sales_Concepts FOREIGN KEY (ConceptID)
+        REFERENCES Concepts(ID)
+        ON DELETE CASCADE,
+    CONSTRAINT FK_Sales_Dishes FOREIGN KEY (DishID)
+        REFERENCES Dishes(ID)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IDX_Sales_Period ON Sales(Period);
+CREATE INDEX IDX_Sales_ConceptID ON Sales(ConceptID);
+CREATE INDEX IDX_Sales_DishID ON Sales(DishID);
