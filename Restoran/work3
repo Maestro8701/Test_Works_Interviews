@@ -1,1 +1,56 @@
 
+WITH RestaurantSales AS (
+    SELECT 
+        r.Код,
+        r.Наименование AS Ресторан,
+        r.Город,
+        r.[Основная группа концепций] AS Концепция,
+        p.[Категория блюда],
+        SUM(CAST(p.[Сумма со скидкой] AS DECIMAL(18,2))) AS [Сумма со скидкой],
+        SUM(CAST(p.[Количество блюд] AS INT)) AS [Количество проданных блюд]
+    FROM 
+        Концепции r
+    JOIN 
+        [Продажи блюд] p ON r.Наименование = p.Концепция
+    WHERE 
+        r.[Основная группа концепций] = 'а/п Калининград'
+        AND p.Период = '2023-11'
+    GROUP BY 
+        r.Код, r.Наименование, r.Город, r.[Основная группа концепций], p.[Категория блюда]
+),
+TotalSales AS (
+    SELECT 
+        Ресторан,
+        SUM([Сумма со скидкой]) AS [Общая выручка]
+    FROM 
+        RestaurantSales
+    GROUP BY 
+        Ресторан
+),
+RankedCategories AS (
+    SELECT 
+        rs.*,
+        ts.[Общая выручка],
+        CASE WHEN ts.[Общая выручка] = 0 THEN 0
+             ELSE (rs.[Сумма со скидкой] / ts.[Общая выручка]) * 100 
+        END AS [Доля в общей выручке],
+        ROW_NUMBER() OVER (PARTITION BY rs.Ресторан ORDER BY rs.[Сумма со скидкой] DESC) AS [Ранг категории]
+    FROM 
+        RestaurantSales rs
+    JOIN 
+        TotalSales ts ON rs.Ресторан = ts.Ресторан
+)
+SELECT 
+    '2023-11' AS Период,
+    rc.Код,
+    rc.Ресторан,
+    rc.[Категория блюда],
+    rc.[Сумма со скидкой],
+    rc.[Количество проданных блюд],
+    CAST(rc.[Доля в общей выручке] AS DECIMAL(5,2)) AS [Доля в общей выручке],
+    CASE WHEN rc.[Ранг категории] <= 4 THEN 1 ELSE 0 END AS [Топ-4 категория]
+FROM 
+    RankedCategories rc
+ORDER BY 
+    rc.Ресторан,
+    rc.[Категория блюда];
