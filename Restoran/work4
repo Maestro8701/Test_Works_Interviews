@@ -1,1 +1,24 @@
+WITH CheckSummary AS (
+    SELECT
+        [Номер чека],
+        MAX([Концепция]) AS Концепция,
+        COUNT(DISTINCT CASE 
+            WHEN [Тип товара] = 'Блюдо' AND [Категория блюд] <> 'Расходные материалы' THEN [Блюдо]
+            ELSE NULL
+        END) AS Count_Dishes,
+        MAX(CASE WHEN [Тип товара] = 'Блюдо' THEN [Количество блюд] ELSE 0 END) AS Max_Quantity_Dishes,
+        MAX(CASE WHEN [Тип товара] = 'Модификатор' THEN CASE WHEN [Сумма со скидкой] > 0 THEN 1 ELSE 0 END ELSE 0 END) AS Has_Modifier_With_NonZero_Sum
+    FROM [Продажи блюд за сутки]
+    GROUP BY [Номер чека]
+)
+SELECT
+    Концепция,
+    COUNT(*) AS Количество_еденичных_чеков
+FROM CheckSummary
+WHERE
+    Count_Dishes = 1
+    AND Max_Quantity_Dishes = 1
+    AND Has_Modifier_With_NonZero_Sum = 0
+GROUP BY Концепция
+ORDER BY Концепция;
 
