@@ -1,1 +1,214 @@
 
+# -*- coding: utf-8 -*-
+import os
+import zipfile
+import pandas as pd
+from sqlalchemy import create_engine
+import warnings
+import traceback
+import sys
+import locale
+
+# Загрузка в базы данных не доработана поэтому можно считать что ее нет 
+locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
+warnings.filterwarnings('ignore')
+
+def extract_archive(archive_path, extract_to='data'):
+    try:
+        if not os.path.exists(archive_path):
+            raise FileNotFoundError(f"Archive {archive_path} not found")
+            
+        if not os.path.exists(extract_to):
+            os.makedirs(extract_to)
+            
+        with zipfile.ZipFile(archive_path, 'r') as zip_ref:
+            file_list = []
+            for name in zip_ref.namelist():
+                try:
+                    try:
+                        decoded_name = name.encode('cp437').decode('cp1251')
+                    except:
+                        decoded_name = name.encode('cp437').decode('utf-8', errors='replace')
+                    file_list.append(decoded_name)
+                except Exception as e:
+                    print(f"Encoding error with file {name}: {str(e)}")
+                    file_list.append(name)
+            
+            has_folder = any('/' in f or '\\' in f for f in file_list)
+            
+            if has_folder:
+                for file_info in zip_ref.infolist():
+                    try:
+                        original_name = file_info.filename  
+                        try:
+                            decoded_name = original_name.encode('cp437').decode('cp1251')
+                        except:
+                            decoded_name = original_name.encode('cp437').decode('utf-8', errors='replace')
+                        
+                        extracted_path = os.path.join(extract_to, decoded_name)
+                        zip_ref.extract(file_info, extract_to)
+                        
+                        if original_name != decoded_name:
+                            os.rename(
+                                os.path.join(extract_to, original_name),
+                                extracted_path
+                            )
+                    except Exception as e:
+                        print(f"Error extracting file {file_info.filename}: {str(e)}")
+                        continue
+                
+                for f in file_list:
+                    if '/' in f or '\\' in f:
+                        first_folder = f.split('/')[0].split('\\')[0]
+                        return os.path.join(extract_to, first_folder)
+                return extract_to
+            else:
+                zip_ref.extractall(extract_to)
+                return extract_to
+                
+    except Exception as e:
+        print(f"Error extracting archive: {str(e)}")
+        traceback.print_exc()
+        sys.exit(1)
+
+def find_excel_files(folder_path):
+    excel_files = []
+    for root, dirs, files in os.walk(folder_path):
+        for file in files:
+            if file.lower().endswith(('.xlsx', '.xls')):
+                try:
+                    full_path = os.path.join(root, file)
+                    excel_files.append(full_path)
+                except Exception as e:
+                    print(f"Error with file {file}: {str(e)}")
+                    continue
+    return excel_files
+
+def safe_read_excel(file_path):
+    try:
+        df = pd.read_excel(file_path, engine='openpyxl', dtype=None)
+        df = df.dropna(how='all').dropna(axis=1, how='all')
+        return df
+    except Exception as e:
+        print(f"Error reading file {file_path}: {str(e)}")
+        traceback.print_exc()
+        return None
+
+def convert_numeric_columns(df):
+    numeric_columns = [
+        'Количество блюд',
+        'Средняя цена без скидки',
+        'Себестоимость',
+        'Сумма скидки',
+        'Сумма со скидкой'
+    ]
+    for col in numeric_columns:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.replace(',', '.').str.strip()
+            df[col] = pd.to_numeric(df[col], errors='ignore')
+    return df
+
+def save_to_excel(df, output_file):
+    try:
+        with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+            df.to_excel(writer, index=False)
+
+            worksheet = writer.sheets['Sheet1']
+
+            for i, col in enumerate(df.columns, 1):
+                max_length = max(df[col].astype(str).map(len).max(), len(col)) + 2
+                worksheet.column_dimensions[chr(64 + i)].width = max_length
+
+            from openpyxl.styles import numbers
+            num_format = numbers.FORMAT_NUMBER_00
+
+            for col_name in ['Количество блюд', 'Средняя цена без скидки', 'Себестоимость', 'Сумма скидки', 'Сумма со скидкой']:
+                if col_name in df.columns:
+                    col_idx = df.columns.get_loc(col_name) + 1
+                    for row in range(2, len(df) + 2):
+                        worksheet.cell(row=row, column=col_idx).number_format = num_format
+
+        print(f"Data saved successfully to {output_file}")
+    except Exception as e:
+        print(f"Error saving to Excel: {str(e)}")
+        traceback.print_exc()
+
+
+def process_excel_files(input_folder, output_file='combined_data.xlsx'):
+    all_data = []
+    
+    excel_files = find_excel_files(input_folder)
+    
+    if not excel_files:
+        print("No Excel files found for processing")
+        return None
+        
+    print(f"\nFound {len(excel_files)} Excel files for processing")
+    
+    for i, file_path in enumerate(excel_files, 1):
+        try:
+            file_name = os.path.basename(file_path)
+            print(f"[{i}/{len(excel_files)}] Processing: {file_name}")
+            df = safe_read_excel(file_path)
+            
+            if df is not None and not df.empty:
+                df = convert_numeric_columns(df)
+                df['source_file'] = file_name
+                all_data.append(df)
+                
+        except Exception as e:
+            print(f"Error processing {file_path}: {str(e)}")
+            traceback.print_exc()
+            continue
+    
+    if all_data:
+        try:
+            combined_df = pd.concat(all_data, ignore_index=True)
+            save_to_excel(combined_df, output_file)
+            return combined_df
+        except Exception as e:
+            print(f"Error saving result: {str(e)}")
+            traceback.print_exc()
+            return None
+    else:
+        print("Failed to process any files")
+        return None
+
+def load_to_db(df, db_connection_string, table_name='restaurant_data'):
+    try:
+        engine = create_engine(db_connection_string)
+        df.to_sql(table_name, engine, if_exists='append', index=False)
+        print(f"\nData successfully loaded to table {table_name}")
+        return True
+    except Exception as e:
+        print(f"Error loading to database: {str(e)}")
+        traceback.print_exc()
+        return False
+
+def main():
+    ARCHIVE_PATH = 'data-input.zip'  
+    OUTPUT_FILE = 'combined_restaurant_data.xlsx'  
+    DB_CONNECTION_STRING = 'postgresql://user:password@localhost:5432/db_name' 
+    
+    try:
+        print("Extracting archive...")
+        data_folder = extract_archive(ARCHIVE_PATH)
+        print(f"Data saved to: {data_folder}")
+        
+        print("\nSearching and processing files...")
+        combined_data = process_excel_files(data_folder, OUTPUT_FILE)
+        
+        if combined_data is not None:
+            load_db = input("\nLoad data to database? (y/n): ").strip().lower()
+            if load_db == 'y':
+                print("Loading to database...")
+                load_to_db(combined_data, DB_CONNECTION_STRING)
+        
+        print("\nProcessing completed")
+    except Exception as e:
+        print(f"\nCritical error: {str(e)}")
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
