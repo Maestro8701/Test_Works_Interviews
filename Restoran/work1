@@ -2,15 +2,14 @@
 -- Таблица ресторанов (Concepts)
 CREATE TABLE Concepts (
     ID INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(255) NOT NULL,          -- Название ресторана (может повторяться)
+    Name NVARCHAR(100) NOT NULL,          -- Название ресторана (может повторяться)
     City NVARCHAR(100) NOT NULL,
-    MainGroup NVARCHAR(255) NOT NULL
 );
 
 -- Таблица категорий блюд (DishCategories)
 CREATE TABLE DishCategories (
     ID INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(255) NOT NULL            -- Название категории (без уникальности)
+    Name NVARCHAR(100) NOT NULL            -- Название категории (без уникальности)
 );
 
 -- Таблица блюд (Dishes)
